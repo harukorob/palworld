@@ -7,14 +7,22 @@ import { BREED_META, SPECIAL_OUTCOMES } from "./breeding-data";
 type Pal = { name: string; rank: number; image: string; elements: string[] };
 type Owned = { name: string; count: number; passives: string[]; sex?: string; playerId: string; playerName: string };
 type Combo = { a: Pal; b: Pal; score: number };
-type PathStep = {
-  a: string;
-  b: string;
-  child: string;
-  mask: number;
+type PathTreeNode = {
+  id: string;
+  name: string;
+  passives: string[];
+  owned: boolean;
+  sex?: string;
   generation: number;
+  left?: PathTreeNode;
+  right?: PathTreeNode;
 };
-type PathResult = { steps: PathStep[]; mask: number; generations: number };
+type PathResult = {
+  tree: PathTreeNode;
+  mask: number;
+  generations: number;
+  crossings: number;
+};
 const BREED_BY_NAME = new Map(BREED_META.map((p) => [p.n, p]));
 const SPECIAL_CHILDREN = new Set(Object.values(SPECIAL_OUTCOMES).flat());
 const demo: Pal[] = [
@@ -110,6 +118,132 @@ function Portrait({
       )}
     </span>
   );
+}
+
+function BreedingTree({
+  result,
+  byName,
+}: {
+  result: PathResult;
+  byName: Map<string, Pal>;
+}) {
+  const viewport = useRef<HTMLDivElement>(null);
+  const drag = useRef({ active: false, x: 0, y: 0, ox: 0, oy: 0 });
+  const [scale, setScale] = useState(0.9);
+  const [offset, setOffset] = useState({ x: 40, y: 28 });
+  const [dragging, setDragging] = useState(false);
+
+  type Positioned = { node: PathTreeNode; x: number; y: number };
+  const layout = useMemo(() => {
+    const nodes: Positioned[] = [];
+    const edges: { from: Positioned; to: Positioned }[] = [];
+    let leaf = 0;
+    const place = (node: PathTreeNode, depth: number): Positioned => {
+      const children = [node.left, node.right].filter(Boolean) as PathTreeNode[];
+      let x: number;
+      if (!children.length) {
+        x = 150 + leaf++ * 300;
+      } else {
+        const placed = children.map((child) => place(child, depth + 1));
+        x = placed.reduce((sum, child) => sum + child.x, 0) / placed.length;
+        const current = { node, x, y: 42 + depth * 245 };
+        placed.forEach((child) => edges.push({ from: current, to: child }));
+      }
+      const positioned = { node, x, y: 42 + depth * 245 };
+      nodes.push(positioned);
+      return positioned;
+    };
+    place(result.tree, 0);
+    const maxDepth = Math.max(...nodes.map((item) => item.node.generation));
+    return {
+      nodes,
+      edges,
+      width: Math.max(980, leaf * 300 + 120),
+      height: Math.max(610, (maxDepth + 1) * 245 + 210),
+    };
+  }, [result]);
+
+  const changeZoom = (next: number) => setScale(Math.min(1.6, Math.max(0.45, next)));
+  const resetView = () => {
+    const available = viewport.current?.clientWidth || 1000;
+    const fitted = Math.min(1, Math.max(0.45, (available - 56) / layout.width));
+    setScale(fitted);
+    setOffset({ x: 28, y: 28 });
+  };
+
+  return <div className="tree-shell">
+    <div className="tree-toolbar" aria-label="Controles da árvore">
+      <button type="button" onClick={() => changeZoom(scale + 0.1)} aria-label="Aumentar zoom">＋</button>
+      <button type="button" onClick={() => changeZoom(scale - 0.1)} aria-label="Diminuir zoom">−</button>
+      <button type="button" onClick={resetView} aria-label="Ajustar árvore à tela">⌗</button>
+      <b>{Math.round(scale * 100)}%</b>
+    </div>
+    <div
+      className={`tree-viewport ${dragging ? "dragging" : ""}`}
+      ref={viewport}
+      onWheel={(event) => {
+        event.preventDefault();
+        changeZoom(scale + (event.deltaY < 0 ? 0.08 : -0.08));
+      }}
+      onPointerDown={(event) => {
+        if ((event.target as HTMLElement).closest("button")) return;
+        drag.current = { active: true, x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
+        setDragging(true);
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        if (!drag.current.active) return;
+        setOffset({
+          x: drag.current.ox + event.clientX - drag.current.x,
+          y: drag.current.oy + event.clientY - drag.current.y,
+        });
+      }}
+      onPointerUp={(event) => {
+        drag.current.active = false;
+        setDragging(false);
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }}
+      onPointerCancel={() => { drag.current.active = false; setDragging(false); }}
+    >
+      <div
+        className="tree-stage"
+        style={{ width: layout.width, height: layout.height, transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}
+      >
+        <svg className="tree-lines" width={layout.width} height={layout.height} aria-hidden="true">
+          {layout.edges.map(({ from, to }, index) => {
+            const startY = from.y + 174;
+            const endY = to.y;
+            const middleY = startY + (endY - startY) / 2;
+            return <path key={index} d={`M ${from.x} ${startY} V ${middleY} H ${to.x} V ${endY}`} />;
+          })}
+        </svg>
+        {layout.nodes.map(({ node, x, y }) => {
+          const isTarget = node.id === result.tree.id;
+          return <article
+            className={`tree-pal ${node.owned ? "owned" : "planned"} ${isTarget ? "target" : ""}`}
+            style={{ left: x, top: y }}
+            key={node.id}
+          >
+            {isTarget && <span className="tree-crown">♛</span>}
+            <header>
+              <Portrait pal={byName.get(node.name)} size="md" />
+              <div>
+                <h4>{node.name} {node.sex === "Macho" || node.sex === "Male" ? <em className="male">♂</em> : node.sex === "Fêmea" || node.sex === "Female" ? <em className="female">♀</em> : null}</h4>
+                <small>{isTarget ? "ALVO" : node.owned ? "NA PALBOX" : "CRUZAR PRIMEIRO"}</small>
+              </div>
+            </header>
+            <div className="tree-passives">
+              {node.passives.length
+                ? node.passives.slice(0, 4).map((passive) => <PassiveBadge id={passive} key={passive} />)
+                : <span>SEM PASSIVAS</span>}
+            </div>
+            <footer>{isTarget ? "TARGET" : node.owned ? "OWNED" : "BREED"}</footer>
+          </article>;
+        })}
+      </div>
+      <span className="tree-hint">Arraste para mover · Use a roda para dar zoom</span>
+    </div>
+  </div>;
 }
 function walkJson(
   value: unknown,
@@ -272,36 +406,54 @@ export default function Home() {
     if (!activeOwned.length || !targetPal) return null;
     const wantedIndex = new Map(wanted.map((x, i) => [x, i]));
     type State = {
+      id: string;
       name: string;
       mask: number;
-      steps: PathStep[];
+      unwanted: number;
+      crossings: number;
       generation: number;
+      tree: PathTreeNode;
     };
     const best = new Map<string, State>();
     const seed: State[] = [];
-    activeOwned.forEach((o) => {
+    activeOwned.forEach((o, index) => {
       let mask = 0;
       o.passives.forEach((p) => {
         const i = wantedIndex.get(p);
         if (i !== undefined) mask |= 1 << i;
       });
-      const state = { name: o.name, mask, steps: [], generation: 0 };
-      const key = `${state.name}|${mask}`;
-      if (!best.has(key)) {
-        best.set(key, state);
-        seed.push(state);
-      }
+      const unwanted = o.passives.filter((p) => !wantedIndex.has(p)).length;
+      const id = `owned-${index}-${norm(o.name)}`;
+      const state: State = {
+        id,
+        name: o.name,
+        mask,
+        unwanted,
+        crossings: 0,
+        generation: 0,
+        tree: { id, name: o.name, passives: o.passives, owned: true, sex: o.sex, generation: 0 },
+      };
+      // Mantém a versão mais limpa de cada espécie/conjunto de passivas no topo,
+      // sem descartar instâncias alternativas que possam ter sexo diferente.
+      const key = `${state.name}|${mask}|${o.sex || ""}`;
+      const old = best.get(key);
+      if (!old || state.unwanted < old.unwanted) best.set(key, state);
+      seed.push(state);
     });
     if (!seed.length) return null;
     const desired = (1 << wanted.length) - 1;
+    const bitCount = (mask: number) => (mask.toString(2).match(/1/g) || []).length;
+    // Passivas desejadas dominam o ranking. Entre rotas com a mesma cobertura,
+    // Pals limpos vêm antes dos portadores de passivas indesejadas.
     const score = (s: State) =>
+      (wanted.length - bitCount(s.mask)) * 1_000_000 +
+      s.unwanted * 10_000 +
       s.generation * 100 +
-      (wanted.length - (s.mask.toString(2).match(/1/g) || []).length) * 18 +
-      s.steps.length;
-    let frontier = [...seed];
+      s.crossings;
+    let frontier = [...best.values()].sort((a, b) => score(a) - score(b));
     // Um Pal já existente nunca encerra a busca: o objetivo desta tela é
     // encontrar uma rota para produzir um novo exemplar.
-    let winners: State[] = [];
+    const winners: State[] = [];
     for (
       let round = 1;
       round <= 5 && !winners.some((s) => s.mask === desired);
@@ -314,40 +466,36 @@ export default function Home() {
       for (const left of frontier.slice(0, 260)) {
         for (const right of pool) {
           for (const child of breedOutcomes(left.name, right.name)) {
-          const mask = left.mask | right.mask;
-          const generation = Math.max(left.generation, right.generation) + 1;
-          const combined = [...left.steps, ...right.steps];
-          const uniq = new Map(
-            combined.map((s) => [`${s.a}|${s.b}|${s.child}|${s.mask}`, s]),
-          );
-          const step: PathStep = {
-            a: left.name,
-            b: right.name,
-            child,
-            mask,
-            generation,
-          };
-          uniq.set(`${step.a}|${step.b}|${step.child}|${step.mask}`, step);
-          const state = {
-            name: child,
-            mask,
-            steps: [...uniq.values()].sort(
-              (a, b) => a.generation - b.generation,
-            ),
-            generation,
-          };
-          if (child === target) winners.push(state);
-          const key = `${child}|${mask}`;
-          const old = best.get(key);
-          if (
-            !old ||
-            state.generation < old.generation ||
-            (state.generation === old.generation &&
-              state.steps.length < old.steps.length)
-          ) {
-            best.set(key, state);
-            next.push(state);
-          }
+            const mask = left.mask | right.mask;
+            const generation = Math.max(left.generation, right.generation) + 1;
+            const passives = wanted.filter((_, i) => mask & (1 << i));
+            const id = `breed-${round}-${norm(child)}-${left.id}-${right.id}`;
+            const state: State = {
+              id,
+              name: child,
+              mask,
+              // A rota orienta selecionar, entre os ovos, um descendente apenas
+              // com as passivas desejadas. Passivas extras não são propagadas.
+              unwanted: 0,
+              crossings: left.crossings + right.crossings + 1,
+              generation,
+              tree: {
+                id,
+                name: child,
+                passives,
+                owned: false,
+                generation,
+                left: left.tree,
+                right: right.tree,
+              },
+            };
+            if (child === target) winners.push(state);
+            const key = `${child}|${mask}`;
+            const old = best.get(key);
+            if (!old || score(state) < score(old)) {
+              best.set(key, state);
+              next.push(state);
+            }
           }
         }
       }
@@ -355,8 +503,8 @@ export default function Home() {
     }
     if (!winners.length) return null;
     const eligibleWinners = wanted.length
-      ? winners.filter((s) => s.mask === desired && s.steps.length > 0)
-      : winners.filter((s) => s.steps.length > 0);
+      ? winners.filter((s) => s.mask === desired && s.crossings > 0)
+      : winners.filter((s) => s.crossings > 0);
     if (!eligibleWinners.length) return null;
     const chosen = eligibleWinners.sort(
       (a, b) =>
@@ -364,9 +512,10 @@ export default function Home() {
         score(a) - score(b),
     )[0];
     return {
-      steps: chosen.steps,
+      tree: chosen.tree,
       mask: chosen.mask,
       generations: chosen.generation,
+      crossings: chosen.crossings,
     };
   }, [activeOwned, targetPal, target, wanted, breedOutcomes]);
   function togglePassive(p: string) {
@@ -409,7 +558,7 @@ export default function Home() {
         <a className="brand" href="#top">
           <i>PP</i>
           <span>
-            PAL<span>//</span>PLANNER
+            PAL<span>{"//"}</span>PLANNER
           </span>
         </a>
         <nav>
@@ -754,25 +903,11 @@ export default function Home() {
                     <div className="path-summary">
                       <div><span>MELHOR CAMINHO</span><b>{breedingPath.generations} {breedingPath.generations === 1 ? "geração" : "gerações"}</b></div>
                       <div><span>PASSIVAS COBERTAS</span><b>{wanted.length ? `${wanted.filter((_, i) => breedingPath.mask & (1 << i)).length}/${wanted.length}` : "Sem filtro"}</b></div>
-                      <div><span>ETAPAS DE CRUZAMENTO</span><b>{breedingPath.steps.length}</b></div>
+                      <div><span>ETAPAS DE CRUZAMENTO</span><b>{breedingPath.crossings}</b></div>
                     </div>
                     {wanted.length > 0 && <div className="wanted-strip">{wanted.map((p, i) => <PassiveBadge id={p} active={!!(breedingPath.mask & (1 << i))} key={p} />)}</div>}
-                    <div className="path-timeline">
-                      {breedingPath.steps.map((s, i) => (
-                        <article key={`${s.a}-${s.b}-${s.child}-${i}`}>
-                          <div className="path-index"><span>ETAPA {String(i + 1).padStart(2, "0")}</span><b>GERAÇÃO {s.generation}</b></div>
-                          <div className="path-cross">
-                            <div><Portrait pal={byName.get(s.a)} size="md"/><p><small>{ownedNames.has(s.a) ? "DA PALBOX" : "DESCENDENTE"}</small><b>{s.a}</b></p></div>
-                            <i>×</i>
-                            <div><Portrait pal={byName.get(s.b)} size="md"/><p><small>{ownedNames.has(s.b) ? "DA PALBOX" : "DESCENDENTE"}</small><b>{s.b}</b></p></div>
-                            <em>→</em>
-                            <div className="path-child"><Portrait pal={byName.get(s.child)} size="md"/><p><small>RESULTADO</small><b>{s.child}</b></p></div>
-                          </div>
-                          {wanted.length > 0 && <div className="step-passives">{wanted.map((p, pi) => <PassiveBadge id={p} active={!!(s.mask & (1 << pi))} key={p} />)}</div>}
-                        </article>
-                      ))}
-                    </div>
-                    <p className="inherit-note">A rota maximiza a presença dos portadores. A herança de passivas continua sujeita à probabilidade do jogo; não representa garantia de 100% no ovo.</p>
+                    <BreedingTree result={breedingPath} byName={byName} />
+                    <p className="inherit-note">Verde indica um Pal já presente na Palbox; dourado indica um Pal que precisa ser produzido. Em cada cruzamento, selecione um descendente apenas com as passivas exibidas antes de avançar. A herança continua sujeita à probabilidade do jogo.</p>
                   </>
                 ) : (
                   <div className="path-lock"><span>⌁</span><h3>ROTA NÃO ENCONTRADA</h3><p>Não foi possível formar este Pal em até cinco gerações com os Pals importados e os filtros atuais.</p></div>
@@ -864,7 +999,7 @@ export default function Home() {
         <div className="brand">
           <i>PP</i>
           <span>
-            PAL<span>//</span>PLANNER
+            PAL<span>{"//"}</span>PLANNER
           </span>
         </div>
         <p>

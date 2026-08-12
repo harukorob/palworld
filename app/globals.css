@@ -1019,7 +1019,7 @@ footer a {
 .passive-menu>button{border:0;background:transparent;padding:0;cursor:pointer;text-align:left}.passive-menu>button:hover .passive-badge{filter:brightness(1.25)}.passive-menu>small{padding:12px;color:#7890a2;font-size:11px}
 .passive-badge{--pc:#b4c2ce;position:relative;isolation:isolate;min-width:0;min-height:31px;display:flex;align-items:center;gap:7px;overflow:hidden;padding:5px 7px 5px 9px;border:1px solid var(--pc);background:linear-gradient(105deg,#18262e,#24333c 54%,#15222b);color:var(--pc);box-shadow:inset 3px 0 0 var(--pc),inset 0 0 12px #0007}
 .passive-badge:before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(125deg,transparent 0 29%,#ffffff0b 29% 43%,transparent 43% 58%,#7ac9ff12 58% 78%,transparent 78%);clip-path:polygon(0 0,100% 0,100% 100%,0 100%,9% 50%)}
-.passive-badge b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;text-shadow:0 1px 2px #000}.passive-badge>i{margin-left:auto;display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;font-style:normal;line-height:6px}.passive-badge>i em{font-size:16px;font-style:normal;font-weight:900}
+.passive-badge b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;text-shadow:0 1px 2px #000}.passive-badge>i{width:15px;margin-left:auto;display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;font-style:normal;line-height:1}.passive-badge>i em{display:block;width:8px;height:8px;margin:-3px 0;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);font-size:0;font-style:normal;filter:drop-shadow(0 0 2px currentColor)}
 .passive-badge>button{flex:0 0 22px;width:22px;height:22px;display:grid;place-items:center;border:1px solid currentColor;background:#02070a66;color:inherit;font-size:18px;line-height:1;cursor:pointer}.passive-badge>button:hover{background:#fff2}
 .passive-badge.tier-4{--pc:#65ffeb;background:linear-gradient(105deg,#064b43,#105367 52%,#263e91)}.passive-badge.tier-3{--pc:#ffe21c;background:linear-gradient(105deg,#3c4204,#4e4b06 55%,#2c3103)}
 .passive-badge.tier-2{--pc:#ffb955;background:linear-gradient(105deg,#49280a,#563710 55%,#312008)}.passive-badge.tier-1,.passive-badge.tier-0{--pc:#a9d2df;background:linear-gradient(105deg,#26333a,#33434b 55%,#1d2a31)}
@@ -1038,12 +1038,22 @@ footer a {
 .path-summary>div{padding:15px 18px;border-right:1px solid #26374b;display:flex;flex-direction:column}.path-summary>div:last-child{border:0}
 .path-summary span{font-size:7px;color:#61798c;letter-spacing:.12em}.path-summary b{font-size:16px;color:var(--cyan);margin-top:5px}
 .wanted-strip{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.wanted-strip .passive-badge,.step-passives .passive-badge{min-width:170px}
-.path-timeline{display:grid;gap:10px;margin-top:14px}.path-timeline article{border:1px solid #26364a;background:#0b131e;padding:13px 15px}
-.path-index{display:flex;justify-content:space-between;margin-bottom:10px}.path-index span,.path-index b{font-size:7px;letter-spacing:.12em;color:#60778a}.path-index b{color:var(--cyan)}
-.path-cross{display:grid;grid-template-columns:1fr 22px 1fr 30px 1.1fr;align-items:center;gap:7px}.path-cross>div{display:flex;align-items:center;gap:9px;min-width:0}
-.path-cross>i,.path-cross>em{text-align:center;color:#50677a;font-style:normal}.path-cross>em{color:var(--cyan);font-size:20px}.path-cross p{margin:0;display:flex;flex-direction:column;min-width:0}
-.path-cross small{font-size:6px;color:#587084}.path-cross p b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.path-child{padding:7px;background:#35e7ff09;border:1px solid #35e7ff33}
-.step-passives{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px solid #1e2b3b}.already-owned{min-height:390px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.tree-shell{position:relative;margin-top:14px;border:1px solid #26384b;background:#111b26;overflow:hidden}
+.tree-toolbar{position:absolute;z-index:8;top:12px;right:12px;height:42px;display:flex;align-items:center;border:1px solid #33485a;background:#09131ded;box-shadow:0 8px 20px #0007}
+.tree-toolbar button{width:39px;height:40px;border:0;border-right:1px solid #283b4d;background:transparent;color:#d9e8f3;font-size:20px;cursor:pointer}.tree-toolbar button:hover{background:#1a2a37;color:var(--acid)}
+.tree-toolbar b{min-width:60px;text-align:center;color:#72a6c9;font-size:11px}
+.tree-viewport{position:relative;height:650px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;background:radial-gradient(circle at 50% 35%,#19304066,transparent 48%),linear-gradient(#111b26,#101923)}
+.tree-viewport.dragging{cursor:grabbing}.tree-stage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.tree-lines{position:absolute;inset:0;overflow:visible}.tree-lines path{fill:none;stroke:#60798d;stroke-width:2;vector-effect:non-scaling-stroke}
+.tree-pal{position:absolute;width:240px;min-height:174px;transform:translateX(-50%);padding:15px 14px 11px;border:2px solid #d3a733;border-radius:12px;background:linear-gradient(145deg,#0d1720,#0a1118);box-shadow:0 10px 24px #0008,0 0 18px #d3a73318;color:#e8f3fa}
+.tree-pal.owned{border-color:#2df081;box-shadow:0 10px 24px #0008,0 0 18px #2df08118}.tree-pal.target{border-color:#f6d53a;box-shadow:0 10px 28px #0009,0 0 22px #f6d53a20}
+.tree-pal header{display:flex;align-items:center;gap:10px;margin-bottom:10px}.tree-pal header>div{min-width:0}.tree-pal h4{margin:0 0 5px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tree-pal h4 em{font-style:normal}.tree-pal h4 em.male{color:#64aef3}.tree-pal h4 em.female{color:#ff7eac}
+.tree-pal header small{font-size:9px;letter-spacing:.08em;color:#d9ad39}.tree-pal.owned header small{color:#39ee89}
+.tree-passives{display:grid;gap:4px;min-height:35px}.tree-passives .passive-badge{min-height:25px;padding-top:3px;padding-bottom:3px}.tree-passives .passive-badge b{font-size:10px}.tree-passives>span{display:grid;place-items:center;min-height:32px;border:1px dashed #405362;color:#6f8494;font-size:9px;letter-spacing:.1em}
+.tree-pal>footer{width:max-content;margin:10px auto 0;padding:3px 12px;border:1px solid #9c7b20;border-radius:20px;color:#f4ce36;font-size:9px;font-weight:900;letter-spacing:.08em}.tree-pal.owned>footer{border-color:#16884b;color:#2df081}
+.tree-crown{position:absolute;left:50%;top:-28px;transform:translateX(-50%);color:#f6d53a;font-size:29px;text-shadow:0 0 12px #f6d53a88}
+.tree-hint{position:absolute;left:12px;bottom:12px;padding:8px 10px;border:1px solid #31485a;background:#09131ddd;color:#8da3b4;font-size:10px;pointer-events:none}
+.already-owned{min-height:390px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .already-owned b{font-size:18px}.already-owned span{font-size:9px;color:#6c8294}.inherit-note{color:#607589;font-size:8px;line-height:1.6;margin:13px 2px 0}
 /* Legibilidade: nenhum texto informativo importante abaixo de 10px. */
 .signal,.hero-actions a,.hero-actions button,.import-top{font-size:12px}
@@ -1064,7 +1074,7 @@ footer{font-size:10px}
 .result-tabs button{font-size:10px}.result-tabs b,.result-tabs i{font-size:9px}
 .path-lock p{font-size:12px}.path-lock button{font-size:10px}
 .path-summary span{font-size:10px}.wanted-strip span,.step-passives span{font-size:10px}
-.path-index span,.path-index b{font-size:10px}.path-cross small{font-size:9px}.path-cross p b{font-size:12px}
+.tree-pal header small,.tree-pal>footer,.tree-passives>span{font-size:10px}
 .already-owned span{font-size:11px}.inherit-note{font-size:10px}
 @media (max-width: 1050px) {
   .hero {
@@ -1136,7 +1146,7 @@ footer{font-size:10px}
   }
   .result-tabs{display:grid;grid-template-columns:1fr 1fr}.result-tabs button{padding:0 7px}
   .path-panel{padding:13px;min-height:520px}.path-summary{grid-template-columns:1fr}.path-summary>div{border-right:0;border-bottom:1px solid #26374b}
-  .path-cross{grid-template-columns:1fr 20px 1fr}.path-cross>em{grid-column:1/-1}.path-cross>.path-child{grid-column:1/-1}.path-cross .portrait.md{width:55px;height:55px}
+  .tree-viewport{height:580px}.tree-toolbar{top:8px;right:8px}.tree-hint{display:none}
   .route-list {
     grid-template-columns: 1fr;
   }
