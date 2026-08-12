@@ -1,0 +1,11 @@
+import { PAL_RANKS, palSlug } from "../../pals-catalog";
+const SOURCE="https://palworld.gg/breeding-calculator";
+
+const PALWORLD_GG_ICONS:Record<string,string>={
+  "Aegidron":"T_DomeArmorDragon_icon_normal.png","Beakon Cryst":"T_ThunderBird_Ice_icon_normal.png","Blue Slime":"T_YakushimaMonster001_Blue_icon_normal.png","Cave Bat":"T_YakushimaMonster003_icon_normal.png","Celesdir Noct":"T_WhiteDeer_Dark_icon_normal.png","Dandilord":"T_FlowerPrince_icon_normal.png","Demon Eye":"T_YakushimaBoss001_Small_icon_normal.png","Eidrolon Ignis":"T_GhostDragon_Fire_icon_normal.png","Elgrove Cryst":"T_GrassMinotaur_Ice_icon_normal.png","Enchanted Sword":"T_YakushimaMonster002_icon_normal.png","Eye of Cthulhu":"T_YakushimaBoss001_icon_normal.png","Gloopie Primo":"T_OctopusGirl_Neutral_icon_normal.png","Green Slime":"T_YakushimaMonster001_icon_normal.png","Illuminant Bat":"T_YakushimaMonster003_Purple_icon_normal.png","Illuminant Slime":"T_YakushimaMonster001_Pink_icon_normal.png","Knocklem Ignis":"T_WingGolem_Fire_icon_normal.png","Moldron Cryst":"T_VolcanoDragon_Ice_icon_normal.png","Nitemary Botan":"T_GhostRabbit_Grass_icon_normal.png","Petallia Ignis":"T_FlowerDoll_Fire_icon_normal.png","Pierdon Cryst":"T_RockBeast_Ice_icon_normal.png","Polapup Terra":"T_IceSeal_Ground_icon_normal.png","Prixter Lux":"T_ScorpionMan_Electric_icon_normal.png","Purple Slime":"T_YakushimaMonster001_Purple_icon_normal.png","Rainbow Slime":"T_YakushimaMonster001_Rainbow_icon_normal.png","Red Slime":"T_YakushimaMonster001_Red_icon_normal.png","Renjishi":"T_KabukiMan_icon_normal.png","Shaolong":"T_BlueSkyDragon_icon_normal.png","Sibelyx Primo":"T_WhiteMoth_Neutral_icon_normal.png","Silvance":"T_Mothman_icon_normal.png","Smokie Cryst":"T_BlackPuppy_Ice_icon_normal.png","Snock Lux":"T_ElecSnail_Ground_icon_normal.png","Solmora Lux":"T_KingSunfish_Thunder_icon_normal.png","Starryon Primo":"T_NightBlueHorse_Neutral_icon_normal.png","Tetroise Primo":"T_CubeTurtle_Neutral_icon_normal.png","Univolt Cryst":"T_Kirin_Ice_icon_normal.png","Wistella":"T_MoonChild_icon_normal.png"
+};
+
+export async function GET(){
+  const pals=PAL_RANKS.map(([name,rank])=>({name,rank,image:`/pals/${palSlug(name)}-mini.${PALWORLD_GG_ICONS[name]?"png":"webp"}`,elements:[]}));
+  return Response.json({pals,complete:true,source:SOURCE});
+}
