@@ -147,27 +147,27 @@ function BreedingTree({
     return () => element.removeEventListener("wheel", handleWheel);
   }, []);
 
-  type Positioned = { node: PathTreeNode; x: number; y: number };
+  type Positioned = { node: PathTreeNode; renderId: string; x: number; y: number };
   const layout = useMemo(() => {
     const nodes: Positioned[] = [];
     const edges: { from: Positioned; to: Positioned }[] = [];
     let leaf = 0;
-    const place = (node: PathTreeNode, depth: number): Positioned => {
+    const place = (node: PathTreeNode, depth: number, renderId: string): Positioned => {
       const children = [node.left, node.right].filter(Boolean) as PathTreeNode[];
+      let placed: Positioned[] = [];
       let x: number;
       if (!children.length) {
         x = 150 + leaf++ * 320;
       } else {
-        const placed = children.map((child) => place(child, depth + 1));
+        placed = children.map((child, index) => place(child, depth + 1, `${renderId}-${index === 0 ? "L" : "R"}`));
         x = placed.reduce((sum, child) => sum + child.x, 0) / placed.length;
-        const current = { node, x, y: 48 + depth * 285 };
-        placed.forEach((child) => edges.push({ from: current, to: child }));
       }
-      const positioned = { node, x, y: 48 + depth * 285 };
+      const positioned = { node, renderId, x, y: 48 + depth * 285 };
       nodes.push(positioned);
+      placed.forEach((child) => edges.push({ from: positioned, to: child }));
       return positioned;
     };
-    place(result.tree, 0);
+    place(result.tree, 0, "root");
     const maxDepth = Math.max(...nodes.map((item) => item.node.generation));
     return {
       nodes,
@@ -179,7 +179,7 @@ function BreedingTree({
 
   const changeZoom = (next: number) => setScale(Math.min(1.6, Math.max(0.45, next)));
   const positionOf = (item: Positioned) => {
-    const manual = nodeOffsets[item.node.id] || { x: 0, y: 0 };
+    const manual = nodeOffsets[item.renderId] || { x: 0, y: 0 };
     return { x: item.x + manual.x, y: item.y + manual.y };
   };
   const resetView = () => {
@@ -233,22 +233,22 @@ function BreedingTree({
             return <path key={index} d={`M ${parent.x} ${startY} V ${middleY} H ${child.x} V ${endY}`} />;
           })}
         </svg>
-        {layout.nodes.map(({ node, x, y }) => {
-          const isTarget = node.id === result.tree.id;
-          const manual = nodeOffsets[node.id] || { x: 0, y: 0 };
+        {layout.nodes.map(({ node, renderId, x, y }) => {
+          const isTarget = renderId === "root";
+          const manual = nodeOffsets[renderId] || { x: 0, y: 0 };
           return <article
             className={`tree-pal ${node.owned ? "owned" : "planned"} ${isTarget ? "target" : ""}`}
             style={{ left: x + manual.x, top: y + manual.y }}
-            key={node.id}
+            key={renderId}
             onPointerDown={(event) => {
               event.stopPropagation();
-              nodeDrag.current = { id: node.id, active: true, x: event.clientX, y: event.clientY, ox: manual.x, oy: manual.y };
+              nodeDrag.current = { id: renderId, active: true, x: event.clientX, y: event.clientY, ox: manual.x, oy: manual.y };
               event.currentTarget.setPointerCapture(event.pointerId);
             }}
             onPointerMove={(event) => {
-              if (!nodeDrag.current.active || nodeDrag.current.id !== node.id) return;
+              if (!nodeDrag.current.active || nodeDrag.current.id !== renderId) return;
               event.stopPropagation();
-              setNodeOffsets((old) => ({ ...old, [node.id]: {
+              setNodeOffsets((old) => ({ ...old, [renderId]: {
                 x: nodeDrag.current.ox + (event.clientX - nodeDrag.current.x) / scale,
                 y: nodeDrag.current.oy + (event.clientY - nodeDrag.current.y) / scale,
               }}));
